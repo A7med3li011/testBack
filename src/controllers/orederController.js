@@ -5,6 +5,7 @@ import couponModle from "./../../db/models/coupon.js";
 import cartModel from "./../../db/models/cartModel.js";
 import orderModel from "../../db/models/orderModel.js";
 import mongoose from "mongoose";
+import { payment } from "../service/multer/Payment.js";
 
 export const createOrder = handelAsync(async (req, res, next) => {
   const { productId, address, phone, cuoponCode, quantity, paymnetMethod } =
@@ -88,8 +89,46 @@ export const createOrder = handelAsync(async (req, res, next) => {
   if (flag) {
     await cartModel.findOneAndUpdate({ user: req.user._id }, { products: [] });
   }
+
+  if(paymnetMethod == "card"){
+  const session = await payment({
+    payment_method_types:["card"],
+    mode: "payment",
+    customer_email: req.user.email,
+    metadata:{
+      orderId:order._id.toString()
+    },
+    success_url:`${req.protocol}://${req.headers.host}/orders/success/${order._id}`,
+    cancel:`${req.protocol}://${req.headers.host}/orders/cancel/${order._id}`,
+    line_items:order.products.map(product=>{
+      return {
+        price_data:{
+          currency:'egp',
+          product_data:{
+            name:product.title,
+          },
+          unite_amout:product.price * 100
+        },
+        quantity:product.quantity
+      }
+    })
+  })
+
+
+return  res.json({ message: "success", session: session.url });
+}
   res.json({ message: "success", data: order });
 });
+
+
+
+
+
+
+
+
+
+
 
 export const cancleOrder = handelAsync(async (req, res, next) => {
   const { id } = req.params;
