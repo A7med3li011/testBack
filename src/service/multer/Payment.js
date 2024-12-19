@@ -1,4 +1,3 @@
-
 import Stripe from 'stripe';
 
 export async function payment ({
@@ -26,6 +25,7 @@ export async function payment ({
     })
     return session
 }
+
 
 /*
 {
